@@ -96,7 +96,7 @@ export function OpportunityDetail({
               Requirements
             </h2>
             <ul className="space-y-2">
-              {opportunity.requirements.map((req, index) => (
+              {opportunity.requirements.map((req: string, index: number) => (
                 <li key={index} className="flex items-start gap-2 text-muted-foreground">
                   <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                   <span>{req}</span>
@@ -111,7 +111,7 @@ export function OpportunityDetail({
               What you get
             </h2>
             <ul className="space-y-2">
-              {opportunity.benefits.map((benefit, index) => (
+              {opportunity.benefits.map((benefit: string, index: number) => (
                 <li key={index} className="flex items-start gap-2 text-muted-foreground">
                   <Heart className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                   <span>{benefit}</span>

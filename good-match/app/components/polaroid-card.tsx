@@ -99,34 +99,29 @@ export function PolaroidCard({
           <h3 className="text-lg font-semibold text-card-foreground leading-tight text-balance">
             {opportunity.title}
           </h3>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <MapPin className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">{opportunity.location}</span>
+          
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              <span>{opportunity.location}</span>
             </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Clock className="w-4 h-4 flex-shrink-0" />
+            
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
               <span>{opportunity.timeCommitment}</span>
             </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <User className="w-4 h-4 flex-shrink-0" />
+            
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4" />
               <span>{opportunity.username}</span>
             </div>
           </div>
+
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {opportunity.description}
+          </p>
         </div>
       </div>
-
-      {/* Swipe instructions */}
-      {isTop && index === 0 && (
-        <div className="text-center mt-4 text-muted-foreground text-sm">
-          <span className="text-accent font-medium">Swipe left</span> to view details
-          <span className="mx-2">|</span>
-          <span className="text-destructive font-medium">Swipe right</span> to skip
-        </div>
-      )}
     </motion.div>
   );
 }
