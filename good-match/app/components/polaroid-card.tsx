@@ -37,15 +37,17 @@ export function PolaroidCard({
     }
   };
 
-  const stackOffset = index * 4;
-  const stackScale = 1 - index * 0.03;
+  const stackOffset = index * 16;
+  const stackScale = 1 - index * 0.04;
+  const stackRotation = [0, -6, 8, -4];
+  const stackOffsetX = [0, -8, 6, 4];
 
   return (
     <motion.div
       className="absolute w-full cursor-grab active:cursor-grabbing"
       style={{
-        x: isTop ? x : 0,
-        rotate: isTop ? rotate : index * 2 - 2,
+        x: isTop ? x : stackOffsetX[Math.min(index, 3)],
+        rotate: isTop ? rotate : stackRotation[Math.min(index, 3)],
         opacity,
         zIndex: 10 - index,
         top: stackOffset,
@@ -64,9 +66,9 @@ export function PolaroidCard({
       }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
-      <div className="relative bg-white rounded-sm p-3 pb-16 shadow-xl mx-auto max-w-sm">
+      <div className="relative bg-gradient-to-br from-slate-100 to-slate-50 rounded-lg p-2 pb-8 shadow-2xl mx-auto max-w-sm border border-slate-200/50">
         {/* Image container */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-gray-200 pointer-events-none">
+        <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-slate-300 to-slate-400 pointer-events-none rounded-md shadow-inner">
           <Image
             src={opportunity.image}
             alt={opportunity.title}
@@ -79,13 +81,13 @@ export function PolaroidCard({
           {isTop && (
             <>
               <motion.div
-                className="absolute top-4 left-4 text-red-500 text-sm font-bold rotate-[-15deg]"
+                className="absolute top-4 left-4 text-red-600 text-xs font-bold rotate-[-15deg] bg-red-100 px-2 py-1 rounded-lg shadow-lg"
                 style={{ opacity: leftIndicatorOpacity }}
               >
                 ✕ PASS
               </motion.div>
               <motion.div
-                className="absolute top-4 right-4 text-green-500 text-sm font-bold rotate-[15deg]"
+                className="absolute top-4 right-4 text-emerald-600 text-xs font-bold rotate-[15deg] bg-emerald-100 px-2 py-1 rounded-lg shadow-lg"
                 style={{ opacity: rightIndicatorOpacity }}
               >
                 ★ MATCH
@@ -110,8 +112,8 @@ export function PolaroidCard({
                 opacity: useTransform(x, [-150, -80], [1, 0]),
               }}
             >
-              <div className="flex flex-col items-center justify-center w-32 h-32 border-4 border-red-500 rounded-full bg-red-50/80">
-                <div className="text-5xl font-bold text-red-500">✕</div>
+              <div className="flex flex-col items-center justify-center w-32 h-32 border-4 border-red-500 rounded-full bg-gradient-to-br from-red-100 to-red-50/80 shadow-xl">
+                <div className="text-5xl font-bold text-red-600">✕</div>
               </div>
             </motion.div>
             
@@ -121,33 +123,33 @@ export function PolaroidCard({
                 opacity: useTransform(x, [80, 150], [0, 1]),
               }}
             >
-              <div className="flex flex-col items-center justify-center w-32 h-32 border-4 border-green-500 rounded-full bg-green-50/80">
-                <div className="text-4xl font-bold text-green-500">✓</div>
-                <div className="text-xs text-green-600 font-bold mt-1">MATCH!</div>
+              <div className="flex flex-col items-center justify-center w-32 h-32 border-4 border-emerald-500 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-50/80 shadow-xl">
+                <div className="text-4xl font-bold text-emerald-600">✓</div>
+                <div className="text-xs text-emerald-700 font-bold mt-1">MATCH!</div>
               </div>
             </motion.div>
           </motion.div>
         </div>
 
         {/* Polaroid caption area */}
-        <div className="pt-4 space-y-3 pointer-events-none">
-          <h3 className="text-lg font-semibold text-black leading-tight text-balance">
+        <div className="pt-3 space-y-2 pointer-events-none">
+          <h3 className="text-sm font-bold bg-gradient-to-r from-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight text-balance">
             {opportunity.title}
           </h3>
           
-          <div className="space-y-2 text-sm text-gray-700">
+          <div className="space-y-1.5 text-xs text-slate-600">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-3 h-3 text-teal-500" />
               <span>{opportunity.location}</span>
             </div>
             
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3 h-3 text-emerald-500" />
               <span>{opportunity.timeCommitment}</span>
             </div>
             
             <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
+              <User className="w-3 h-3 text-amber-500" />
               <span>{opportunity.username}</span>
             </div>
           </div>
