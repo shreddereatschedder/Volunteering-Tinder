@@ -1,302 +1,251 @@
 import os
 import json
 import asyncio
+import requests
 from datetime import datetime
 
-from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from playwright.async_api import async_playwright
+
 from openai import OpenAI
 from supabase import create_client
-from dotenv import load_dotenv
+
+# ======================================================
+# LOAD ENV
+# ======================================================
 
 load_dotenv()
 
-# =========================================================
-# CONFIG
-# =========================================================
-
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-BASE_URL = "https://volunteer.hiveportsmouth.com"
-SEARCH_URL = (
-    "https://volunteer.hiveportsmouth.com/search-results/"
-    "?postcode=&keyword="
-)
-
 client = OpenAI(api_key=OPENAI_API_KEY)
-
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# =========================================================
-# AI EXTRACTION PROMPT
-# =========================================================
+BASE_URL = "https://volunteer.hiveportsmouth.com"
 
-SYSTEM_PROMPT = """
-You extract volunteering opportunity data.
+SEARCH_URL = "https://volunteer.hiveportsmouth.com/search-results/?postcode=&keyword="
 
-Return ONLY valid JSON.
+# ======================================================
+# AI: EXTRACT JOB DATA
+# ======================================================
 
-Schema:
-
-{
-  "title": "",
-  "location": "",
-  "time_posted": "",
-  "about": "",
-  "requirements": [],
-  "benefits": [],
-  "image_url": "",
-  "organization": ""
-}
-
-Rules:
-- requirements must always be an array
-- benefits must always be an array
-- summarize long descriptions
-- if missing use empty string
-"""
-
-# =========================================================
-# DATABASE
-# =========================================================
-
-def save_opportunity(data):
-
-    try:
-
-        # -------------------------------------------------
-        # 1. HANDLE ORGANISATION
-        # -------------------------------------------------
-
-        org_name = data.get("organization", "Unknown")
-
-        org_result = (
-            supabase
-            .table("organisation")
-            .select("org_id")
-            .eq("name", org_name)
-            .execute()
-        )
-
-        if org_result.data:
-
-            org_id = org_result.data[0]["org_id"]
-
-        else:
-
-            inserted_org = (
-                supabase
-                .table("organisation")
-                .insert({
-                    "name": org_name,
-                    "org_email": ""
-                })
-                .execute()
-            )
-
-            org_id = inserted_org.data[0]["org_id"]
-
-        # -------------------------------------------------
-        # 2. SAVE OPPORTUNITY
-        # -------------------------------------------------
-
-        response = (
-            supabase
-            .table("opportunity")
-            .upsert(
-                {
-                    "org_id": org_id,
-                    "title": data.get("title", ""),
-                    "location": data.get("location", ""),
-                    "time_posted": data.get("time_posted", ""),
-                    "about": data.get("about", ""),
-                    "requirements": data.get("requirements", []),
-                    "benefits": data.get("benefits", []),
-                    "image": data.get("image_url", ""),
-                    "source_url": data.get("source_url", ""),
-                    "scraped_at": datetime.utcnow().isoformat()
-                },
-                on_conflict="source_url"
-            )
-            .execute()
-        )
-
-        print("Saved:", data.get("title"))
-
-        return response
-
-    except Exception as e:
-
-        print("DATABASE ERROR:", e)
-
-# =========================================================
-# HTML CLEANER
-# =========================================================
-
-def clean_html(html):
-    soup = BeautifulSoup(html, "lxml")
-
-    for tag in soup(["script", "style", "noscript"]):
-        tag.extract()
-
-    text = soup.get_text(separator=" ")
-
-    return " ".join(text.split())
-
-# =========================================================
-# AI EXTRACTION
-# =========================================================
-
-async def extract_with_ai(text, image_url, source_url):
+def extract_job(text, url):
 
     prompt = f"""
-SOURCE URL:
-{source_url}
+Extract volunteering opportunity as JSON.
 
-IMAGE:
-{image_url}
+Return ONLY JSON.
 
-PAGE CONTENT:
-{text[:15000]}
+Fields:
+- title
+- location
+- time_posted
+- about
+- requirements (array)
+- benefits (array)
+- organization
+
+URL: {url}
+
+CONTENT:
+{text[:12000]}
 """
 
-    response = client.chat.completions.create(
+    res = client.chat.completions.create(
         model="gpt-4.1-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
+        messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"}
     )
 
-    data = json.loads(response.choices[0].message.content)
-
-    data["source_url"] = source_url
+    data = json.loads(res.choices[0].message.content)
+    data["source_url"] = url
 
     return data
 
-# =========================================================
-# GET ALL OPPORTUNITY LINKS
-# =========================================================
+# ======================================================
+# AI: IMAGE PROMPT
+# ======================================================
 
-async def get_listing_urls(page):
+def make_image_prompt(job):
 
-    print("Loading search page...")
+    prompt = f"""
+Create a cinematic image prompt for a volunteering opportunity.
 
-    await page.goto(
-        SEARCH_URL,
-        wait_until="networkidle"
+Title: {job.get("title")}
+About: {job.get("about")}
+Location: {job.get("location")}
+
+Rules:
+- no text in image
+- emotional
+- realistic cinematic style
+- suitable for app swipe card
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[{"role": "user", "content": prompt}]
     )
 
+    return res.choices[0].message.content
+
+# ======================================================
+# AI IMAGE GENERATION
+# ======================================================
+
+def generate_image(prompt):
+
+    img = client.images.generate(
+        model="gpt-image-1",
+        prompt=prompt,
+        size="1024x1024"
+    )
+
+    return img.data[0].url
+
+# ======================================================
+# SUPABASE STORAGE UPLOAD
+# ======================================================
+
+def upload_image(image_url, name):
+
+    img_data = requests.get(image_url).content
+
+    file_path = f"{name}.png"
+
+    supabase.storage.from_("opportunity-images").upload(
+        file=img_data,
+        path=file_path,
+        file_options={"content-type": "image/png"}
+    )
+
+    return supabase.storage.from_(
+        "opportunity-images"
+    ).get_public_url(file_path)
+
+# ======================================================
+# SAVE TO DATABASE (YOUR SCHEMA)
+# ======================================================
+
+def save_job(job, image_url):
+
+    # --- organisation ---
+    org_name = job.get("organization", "Unknown")
+
+    org = supabase.table("organisation") \
+        .select("org_id") \
+        .eq("name", org_name) \
+        .execute()
+
+    if org.data:
+        org_id = org.data[0]["org_id"]
+    else:
+        inserted = supabase.table("organisation") \
+            .insert({"name": org_name, "org_email": ""}) \
+            .execute()
+        org_id = inserted.data[0]["org_id"]
+
+    # --- opportunity ---
+    supabase.table("opportunity").upsert({
+        "org_id": org_id,
+        "title": job.get("title", ""),
+        "location": job.get("location", ""),
+        "time_posted": job.get("time_posted", ""),
+        "about": job.get("about", ""),
+        "requirements": job.get("requirements", []),
+        "benefits": job.get("benefits", []),
+        "image": image_url,
+        "source_url": job.get("source_url"),
+        "scraped_at": datetime.utcnow().isoformat()
+    }, on_conflict="source_url").execute()
+
+    print("Saved:", job.get("title"))
+
+# ======================================================
+# SCRAPE LISTINGS
+# ======================================================
+
+async def get_links(page):
+
+    await page.goto(SEARCH_URL, wait_until="networkidle")
     await page.wait_for_timeout(3000)
 
-    html = await page.content()
+    soup = BeautifulSoup(await page.content(), "lxml")
 
-    soup = BeautifulSoup(html, "lxml")
+    links = set()
 
-    urls = set()
+    for a in soup.find_all("a"):
 
-    for link in soup.select("a"):
+        href = a.get("href")
 
-        href = link.get("href")
-
-        if not href:
-            continue
-
-        if "/opportunities/" in href:
+        if href and "opportunity" in href:
 
             if href.startswith("http"):
-                urls.add(href)
+                links.add(href)
             else:
-                urls.add(BASE_URL + href)
+                links.add(BASE_URL + href)
 
-    print(f"Found {len(urls)} opportunities")
+    return list(links)
 
-    return list(urls)
+# ======================================================
+# SCRAPE ONE PAGE
+# ======================================================
 
-# =========================================================
-# SCRAPE SINGLE OPPORTUNITY
-# =========================================================
-
-async def scrape_opportunity(page, url):
+async def scrape(page, url):
 
     try:
+
         print("Scraping:", url)
 
-        await page.goto(
-            url,
-            wait_until="networkidle"
-        )
-
+        await page.goto(url, wait_until="networkidle")
         await page.wait_for_timeout(2000)
 
-        html = await page.content()
+        soup = BeautifulSoup(await page.content(), "lxml")
 
-        soup = BeautifulSoup(html, "lxml")
+        text = soup.get_text(" ", strip=True)
 
-        # Try to get image
-        image_url = ""
+        job = extract_job(text, url)
 
-        og_image = soup.select_one(
-            'meta[property="og:image"]'
+        prompt = make_image_prompt(job)
+
+        img_url = generate_image(prompt)
+
+        final_img = upload_image(
+            img_url,
+            job["title"].replace(" ", "_")
         )
 
-        if og_image:
-            image_url = og_image.get("content", "")
-
-        # Clean page
-        cleaned_text = clean_html(html)
-
-        # AI extraction
-        structured_data = await extract_with_ai(
-            cleaned_text,
-            image_url,
-            url
-        )
-
-        # Save
-        save_opportunity(structured_data)
+        save_job(job, final_img)
 
     except Exception as e:
-        print("SCRAPE ERROR:", e)
+        print("ERROR:", e)
 
-# =========================================================
+# ======================================================
 # MAIN
-# =========================================================
+# ======================================================
 
 async def main():
 
     async with async_playwright() as p:
 
-        browser = await p.chromium.launch(
-            headless=True
-        )
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
 
-        context = await browser.new_context()
+        links = await get_links(page)
 
-        page = await context.new_page()
+        print(f"Found {len(links)} opportunities")
 
-        # Get all listings
-        urls = await get_listing_urls(page)
-
-        # Scrape sequentially
-        for url in urls:
-            await scrape_opportunity(page, url)
+        for link in links:
+            await scrape(page, link)
 
         await browser.close()
 
-# =========================================================
+# ======================================================
 # RUN
-# =========================================================
+# ======================================================
 
 if __name__ == "__main__":
     asyncio.run(main())
