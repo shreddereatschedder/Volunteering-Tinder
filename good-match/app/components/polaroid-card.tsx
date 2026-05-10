@@ -52,8 +52,8 @@ export function PolaroidCard({
         scale: stackScale,
       }}
       drag={isTop ? "x" : false}
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.9}
+      dragConstraints={{ left: -200, right: 200 }}
+      dragElastic={0.2}
       onDragEnd={isTop ? handleDragEnd : undefined}
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: stackScale, opacity: 1 }}
@@ -64,9 +64,9 @@ export function PolaroidCard({
       }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
-      <div className="bg-white rounded-sm p-3 pb-16 shadow-xl mx-auto max-w-sm">
+      <div className="relative bg-white rounded-sm p-3 pb-16 shadow-xl mx-auto max-w-sm">
         {/* Image container */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-gray-200">
+        <div className="relative aspect-[3/4] overflow-hidden bg-gray-200 pointer-events-none">
           <Image
             src={opportunity.image}
             alt={opportunity.title}
@@ -79,23 +79,58 @@ export function PolaroidCard({
           {isTop && (
             <>
               <motion.div
-                className="absolute top-4 left-4 bg-accent text-accent-foreground px-4 py-2 rounded-lg font-bold text-lg rotate-[-15deg]"
+                className="absolute top-4 left-4 text-red-500 text-sm font-bold rotate-[-15deg]"
                 style={{ opacity: leftIndicatorOpacity }}
               >
-                VIEW
+                ✕ PASS
               </motion.div>
               <motion.div
-                className="absolute top-4 right-4 bg-destructive text-primary-foreground px-4 py-2 rounded-lg font-bold text-lg rotate-[15deg]"
+                className="absolute top-4 right-4 text-green-500 text-sm font-bold rotate-[15deg]"
                 style={{ opacity: rightIndicatorOpacity }}
               >
-                SKIP
+                ★ MATCH
               </motion.div>
             </>
           )}
+          
+          {/* Match/Reject overlay */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center rounded-lg"
+            style={{
+              opacity: useTransform(
+                x,
+                [-150, -80, 80, 150],
+                [1, 0, 0, 1]
+              ),
+            }}
+          >
+            <motion.div
+              className="absolute flex items-center justify-center w-32 h-32 rounded-full"
+              style={{
+                opacity: useTransform(x, [-150, -80], [1, 0]),
+              }}
+            >
+              <div className="flex flex-col items-center justify-center w-32 h-32 border-4 border-red-500 rounded-full bg-red-50/80">
+                <div className="text-5xl font-bold text-red-500">✕</div>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              className="absolute flex items-center justify-center w-32 h-32 rounded-full"
+              style={{
+                opacity: useTransform(x, [80, 150], [0, 1]),
+              }}
+            >
+              <div className="flex flex-col items-center justify-center w-32 h-32 border-4 border-green-500 rounded-full bg-green-50/80">
+                <div className="text-4xl font-bold text-green-500">✓</div>
+                <div className="text-xs text-green-600 font-bold mt-1">MATCH!</div>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
 
         {/* Polaroid caption area */}
-        <div className="pt-4 space-y-3">
+        <div className="pt-4 space-y-3 pointer-events-none">
           <h3 className="text-lg font-semibold text-black leading-tight text-balance">
             {opportunity.title}
           </h3>
@@ -117,6 +152,9 @@ export function PolaroidCard({
             </div>
           </div>
         </div>
+
+        {/* Drag overlay - captures drag events across entire card */}
+        {isTop && <div className="absolute inset-0 rounded-sm" style={{ touchAction: "none" }} />}
       </div>
     </motion.div>
   );
