@@ -64,9 +64,9 @@ export function PolaroidCard({
       }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
-      <div className="bg-card rounded-sm p-3 pb-16 shadow-xl mx-auto max-w-sm">
+      <div className="bg-white rounded-sm p-3 pb-16 shadow-xl mx-auto max-w-sm">
         {/* Image container */}
-        <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
+        <div className="relative aspect-[3/4] overflow-hidden bg-gray-200">
           <Image
             src={opportunity.image}
             alt={opportunity.title}
@@ -96,11 +96,11 @@ export function PolaroidCard({
 
         {/* Polaroid caption area */}
         <div className="pt-4 space-y-3">
-          <h3 className="text-lg font-semibold text-card-foreground leading-tight text-balance">
+          <h3 className="text-lg font-semibold text-black leading-tight text-balance">
             {opportunity.title}
           </h3>
           
-          <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="space-y-2 text-sm text-gray-700">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
               <span>{opportunity.location}</span>
@@ -116,10 +116,6 @@ export function PolaroidCard({
               <span>{opportunity.username}</span>
             </div>
           </div>
-
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {opportunity.description}
-          </p>
         </div>
       </div>
     </motion.div>

@@ -38,7 +38,7 @@ export function OpportunityDetail({
         {/* Back button */}
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 bg-card/90 backdrop-blur-sm text-card-foreground p-2 rounded-full shadow-lg hover:bg-card transition-colors"
+          className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-black p-2 rounded-full shadow-lg hover:bg-white transition-colors"
           aria-label="Go back"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -47,30 +47,30 @@ export function OpportunityDetail({
 
       {/* Content */}
       <div className="px-6 pb-24 -mt-16 relative">
-        <div className="bg-card rounded-2xl p-6 shadow-lg">
-          <h1 className="text-2xl font-bold text-card-foreground mb-4 text-balance">
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <h1 className="text-2xl font-bold text-black mb-4 text-balance">
             {opportunity.title}
           </h1>
 
           {/* Meta info */}
           <div className="space-y-3 mb-6">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <MapPin className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-3 text-gray-700">
+              <MapPin className="w-5 h-5 text-gray-600" />
               <span>{opportunity.location}</span>
             </div>
 
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Clock className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-3 text-gray-700">
+              <Clock className="w-5 h-5 text-gray-600" />
               <span>{opportunity.timeCommitment}</span>
             </div>
 
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <User className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-3 text-gray-700">
+              <User className="w-5 h-5 text-gray-600" />
               <span>{opportunity.username}</span>
             </div>
 
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Mail className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-3 text-gray-700">
+              <Mail className="w-5 h-5 text-gray-600" />
               <a
                 href={`mailto:${opportunity.contactEmail}`}
                 className="text-primary hover:underline"
@@ -82,22 +82,22 @@ export function OpportunityDetail({
 
           {/* Description */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-card-foreground mb-2">
+            <h2 className="text-lg font-semibold text-black mb-2">
               About this opportunity
             </h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-gray-700 leading-relaxed">
               {opportunity.description}
             </p>
           </div>
 
           {/* Requirements */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-card-foreground mb-3">
+            <h2 className="text-lg font-semibold text-black mb-3">
               Requirements
             </h2>
             <ul className="space-y-2">
               {opportunity.requirements.map((req: string, index: number) => (
-                <li key={index} className="flex items-start gap-2 text-muted-foreground">
+                <li key={index} className="flex items-start gap-2 text-gray-700">
                   <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                   <span>{req}</span>
                 </li>
@@ -112,7 +112,7 @@ export function OpportunityDetail({
             </h2>
             <ul className="space-y-2">
               {opportunity.benefits.map((benefit: string, index: number) => (
-                <li key={index} className="flex items-start gap-2 text-muted-foreground">
+                <li key={index} className="flex items-start gap-2 text-gray-700">
                   <Heart className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                   <span>{benefit}</span>
                 </li>
